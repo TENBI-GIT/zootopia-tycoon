@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🦁 Zootopia Tycoon</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  :root {
+    --ui-bg: #1a1a2e;
+    --ui-panel: #16213e;
+    --ui-card: #0f3460;
+    --ui-accent: #e94560;
+    --ui-gold: #f5a623;
+    --ui-green: #4caf50;
+    --ui-blue: #2196f3;
+    --ui-purple: #9c27b0;
+    --ui-teal: #00bcd4;
+    --ui-orange: #ff9800;
+    --ui-text: #eef2ff;
+    --ui-muted: #8892b0;
+    --tab-paths: #f5a623;
+    --tab-animals: #4caf50;
+    --tab-facilities: #2196f3;
+    --tab-decorations: #e94560;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #0a0e1a;
+    overflow: hidden;
+    user-select: none;
+    color: var(--ui-text);
+  }
+
+  #gameCanvas {
+    position: fixed;
+    top: 0; left: 0;
+  }
+
+  /* ── GAME TITLE ── */
+  #game-title {
+    position: fixed;
+    top: 12px; left: 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(22,33,62,0.92);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 50px;
+    padding: 7px 16px 7px 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    pointer-events: none;
+    user-select: none;
+  }
+  #game-title .title-icon {
+    font-size: 22px;
+    line-height: 1;
+    animation: titleBounce 2.2s ease-in-out infinite;
+  }
+  #game-title .title-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+  #game-title .title-main {
+    font-size: 14px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+  #game-title .title-sub {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ui-gold);
+    letter-spacing: 0.5px;
+  }
+  @keyframes titleBounce {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    40%       { transform: translateY(-4px) rotate(4deg); }
+    70%       { transform: translateY(-2px) rotate(-2deg); }
+  }
+
+  /* 모바일: 타이틀 1행 / HUD 2행으로 분리 */
+  @media (max-width: 600px) {
+    #game-title {
+      top: 8px; left: 8px;
+      padding: 5px 12px 5px 8px;
+      gap: 5px;
+      border-radius: 40px;
+    }
+    #game-title .title-icon { font-size: 16px; }
+    #game-title .title-main { font-size: 11px; }
+    #game-title .title-sub  { font-size: 8px; letter-spacing: 0.3px; }
+  }
+
+  /* ── HUD TOP ── */
+  #hud-top {
+    position: fixed;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .hud-chip {
+    background: rgba(22,33,62,0.92);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 50px;
+    padding: 8px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+  }
+
+  .hud-chip .icon { font-size: 18px; }
+  .hud-chip .val { color: var(--ui-gold); }
+  .hud-chip.green .val { color: var(--ui-green); }
+  .hud-chip.blue .val { color: var(--ui-teal); }
+  .hud-chip.purple .val { color: #ce93d8; }
+
+  /* ── MODE BUTTONS ── */
+  #mode-bar {
+    position: fixed;
+    top: 12px; right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .mode-btn {
+    background: rgba(22,33,62,0.92);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--ui-muted);
+    transition: all 0.2s;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    pointer-events: all;
+  }
+
+  .mode-btn:hover { border-color: rgba(255,255,255,0.3); color: white; }
+  .mode-btn.active { border-color: var(--ui-accent); color: var(--ui-accent); background: rgba(233,69,96,0.15); }
+  .mode-btn.inspect.active { border-color: var(--ui-teal); color: var(--ui-teal); background: rgba(0,188,212,0.15); }
+  .mode-btn.demolish.active { border-color: #ff5722; color: #ff5722; background: rgba(255,87,34,0.15); }
+
+  /* ── BOTTOM TOOLBAR ── */
+  #toolbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(16,21,40,0.96);
+    border-top: 1.5px solid rgba(255,255,255,0.08);
+    padding: 12px 16px 16px;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  #tab-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tab-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 7px 18px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--ui-muted);
+    transition: all 0.2s;
+  }
+
+  .tab-btn[data-tab="paths"].active  { background: rgba(245,166,35,0.2);  border-color: var(--tab-paths);  color: var(--tab-paths); }
+  .tab-btn[data-tab="animals"].active { background: rgba(76,175,80,0.2);  border-color: var(--tab-animals); color: var(--tab-animals); }
+  .tab-btn[data-tab="facilities"].active { background: rgba(33,150,243,0.2); border-color: var(--tab-facilities); color: var(--tab-facilities); }
+  .tab-btn[data-tab="decorations"].active { background: rgba(233,69,96,0.2); border-color: var(--tab-decorations); color: var(--tab-decorations); }
+
+  #item-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  #item-row::-webkit-scrollbar { height: 4px; }
+  #item-row::-webkit-scrollbar-track { background: transparent; }
+  #item-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+  .item-card {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .item-card:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+  .item-card.selected { border-color: var(--ui-gold); background: rgba(245,166,35,0.15); }
+
+  .item-card .emoji { font-size: 26px; display: block; margin-bottom: 4px; }
+  .item-card .name { font-size: 11px; font-weight: 700; color: var(--ui-muted); }
+  .item-card .cost { font-size: 11px; font-weight: 800; color: var(--ui-gold); }
+
+
+  /* ── RESET BUTTON ── */
+  #reset-btn {
+    position: fixed;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    background: rgba(233,69,96,0.92);
+    border: 1.5px solid rgba(255,100,120,0.5);
+    border-radius: 50px;
+    padding: 8px 22px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: #fff;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(233,69,96,0.4);
+    transition: all 0.2s;
+    display: none; /* JS로 toolbar 위에 표시 */
+  }
+  #reset-btn:hover {
+    background: rgba(233,69,96,1);
+    transform: translateX(-50%) scale(1.05);
+  }
+  @media (max-width: 600px) {
+    #reset-btn { font-size: 12px; padding: 7px 18px; }
+  }
+  /* ── TOOLTIP ── */
+  #tooltip {
+    position: fixed;
+    background: rgba(16,21,40,0.95);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 200;
+    display: none;
+    max-width: 220px;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+  }
+
+  /* ── NOTIFICATION ── */
+  #notif {
+    position: fixed;
+    top: 70px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(233,69,96,0.9);
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-weight: 800;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  #notif.show { opacity: 1; }
+
+
+
+  /* ── HINT TOGGLE ❓ 버튼 (PC + 모바일 공통) ── */
+  #hint-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;                     /* mode-bar 너비에 맞춤 */
+    padding: 10px 16px;
+    font-size: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    background: rgba(22,33,62,0.92);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--ui-muted);
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+    gap: 6px;
+  }
+  #hint-btn:hover {
+    border-color: rgba(255,255,255,0.3);
+    color: white;
+  }
+  #hint-btn.active {
+    border-color: var(--ui-teal);
+    color: var(--ui-teal);
+    background: rgba(0,188,212,0.15);
+  }
+
+  /* ── HINT POPUP (❓ 클릭 시 표시) ── */
+  #hint-popup {
+    position: fixed;
+    z-index: 500;
+    /* top/right는 JS가 버튼 위치 기준으로 런타임에 계산 */
+    background: rgba(22,33,62,0.98);
+    border: 1.5px solid rgba(255,255,255,0.22);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: #d0e4ff;
+    line-height: 2.1;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+    white-space: nowrap;
+    /* 기본: 숨김 (opacity+pointer-events 조합으로 부드러운 토글) */
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.92) translateY(-4px);
+    transform-origin: top center;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  #hint-popup.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1) translateY(0);
+  }
+
+  /* ══ MOBILE RESPONSIVE ══ */
+  @media (max-width: 600px) {
+    /* HUD: 타이틀(1행) 아래 두 번째 줄 */
+    #hud-top {
+      top: 46px;           /* 타이틀(약 36px) + 여유 10px */
+      left: 8px;
+      transform: none;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      max-width: calc(100vw - 70px); /* 우측 모드바 공간 확보 */
+    }
+    .hud-chip {
+      padding: 5px 10px;
+      font-size: 12px;
+      gap: 4px;
+      border-radius: 30px;
+    }
+    .hud-chip .icon { font-size: 14px; }
+    .hud-chip span:not(.icon):not(.val) { display: none; } /* 라벨 숨김 */
+
+    /* 모드 버튼: 아이콘 전용 + 큰 터치 타겟 */
+    #mode-bar {
+      top: 8px; right: 8px;
+      gap: 5px;
+    }
+    .mode-btn {
+      padding: 10px;
+      font-size: 18px;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+    .mode-btn .mode-label { display: none; } /* 텍스트 숨김 */
+
+    /* 하단 툴바: 패딩·크기 최적화 */
+    #toolbar {
+      padding: 8px 10px 12px;
+    }
+    #tab-bar {
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .tab-btn {
+      padding: 8px 12px;
+      font-size: 12px;
+      flex: 1;
+      text-align: center;
+      min-height: 36px;
+    }
+    .item-card {
+      min-width: 68px;
+      padding: 8px 10px;
+    }
+    .item-card .emoji { font-size: 22px; }
+    .item-card .name  { font-size: 10px; }
+    .item-card .cost  { font-size: 10px; }
+
+
+    /* 모바일: 버튼 정사각형으로 축소 */
+    #hint-btn {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      font-size: 20px;
+      border-radius: 12px;
+      gap: 0;
+    }
+    #hint-btn .hint-label { display: none; } /* 텍스트 숨기고 이모지만 */
+    /* 모바일 팝업: 버튼 왼쪽에 나타나도록 top/right 재정의 */
+    #hint-popup {
+      /* 위치는 JS 계산 - CSS 고정값 없음 */
+      font-size: 11px;
+      padding: 11px 14px;
+    }
+
+    /* 알림 위치 조정 */
+    #notif {
+      top: 90px;
+      font-size: 13px;
+      padding: 8px 18px;
+    }
+  }
+
+  /* 터치 디바이스: hover 효과 제거 (ghost hover 방지) */
+  @media (hover: none) {
+    .item-card:hover { transform: none; }
+    .mode-btn:hover  { border-color: rgba(255,255,255,0.1); color: var(--ui-muted); }
+  }
+
+  /* 안전 영역(노치/홈바) 대응 */
+  #toolbar {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  /* ══ CUSTOM CURSOR ══ */
+  /* 기본 캔버스 커서: 귀여운 손가락 포인터 */
+  #gameCanvas {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='translate(6,1)'%3E%3C!-- 손바닥 --%3E%3Crect x='1' y='10' width='16' height='14' rx='4' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3C!-- 검지 --%3E%3Crect x='5' y='2' width='5' height='12' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3C!-- 중지 --%3E%3Crect x='10' y='5' width='5' height='10' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3C!-- 약지 --%3E%3Crect x='1' y='7' width='5' height='9' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3C!-- 손톱(검지) --%3E%3Cellipse cx='7.5' cy='3.5' rx='1.8' ry='1.2' fill='%23ffb3c1'/%3E%3C/g%3E%3C/svg%3E") 6 2, pointer;
+  }
+  #gameCanvas.mode-build {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg transform='translate(6,2)'%3E%3Crect x='1' y='11' width='16' height='14' rx='4' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='5' y='3' width='5' height='12' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='10' y='6' width='5' height='10' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='1' y='8' width='5' height='9' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Cellipse cx='7.5' cy='4.5' rx='1.8' ry='1.2' fill='%23ffb3c1'/%3E%3C/g%3E%3C!-- 연필 --%3E%3Crect x='23' y='2' width='5' height='14' rx='1.5' fill='%23f5a623' stroke='%23333' stroke-width='1.2' transform='rotate(35 25 9)'/%3E%3Cpolygon points='20,24 24,20 22,27' fill='%23fff' stroke='%23333' stroke-width='1' transform='rotate(35 22 24)'/%3E%3Crect x='23' y='2' width='5' height='3' rx='1' fill='%23e94560' stroke='%23333' stroke-width='1' transform='rotate(35 25 9)'/%3E%3C/svg%3E") 6 2, crosshair;
+  }
+  #gameCanvas.mode-demolish {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg transform='translate(6,2)'%3E%3Crect x='1' y='11' width='16' height='14' rx='4' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='5' y='3' width='5' height='12' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='10' y='6' width='5' height='10' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='1' y='8' width='5' height='9' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Cellipse cx='7.5' cy='4.5' rx='1.8' ry='1.2' fill='%23ffb3c1'/%3E%3C/g%3E%3C!-- X 아이콘 --%3E%3Ccircle cx='27' cy='9' r='7' fill='%23e94560' stroke='%23333' stroke-width='1.2'/%3E%3Cline x1='23' y1='5' x2='31' y2='13' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3Cline x1='31' y1='5' x2='23' y2='13' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E") 6 2, not-allowed;
+  }
+  #gameCanvas.mode-inspect {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg transform='translate(6,2)'%3E%3Crect x='1' y='11' width='16' height='14' rx='4' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='5' y='3' width='5' height='12' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='10' y='6' width='5' height='10' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='1' y='8' width='5' height='9' rx='2.5' fill='%23fff9e6' stroke='%23333' stroke-width='1.5'/%3E%3Cellipse cx='7.5' cy='4.5' rx='1.8' ry='1.2' fill='%23a8d8ff'/%3E%3C/g%3E%3C!-- 돋보기 --%3E%3Ccircle cx='26' cy='8' r='6' fill='none' stroke='%2300bcd4' stroke-width='2.5'/%3E%3Ccircle cx='26' cy='8' r='3.5' fill='%23e0f7fa' opacity='0.6'/%3E%3Cline x1='30' y1='13' x2='34' y2='17' stroke='%2300bcd4' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E") 6 2, zoom-in;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- Game Title -->
+<div id="game-title">
+  <span class="title-icon">🦁</span>
+  <div class="title-text">
+    <span class="title-main">주토피아 타이쿤</span>
+    <span class="title-sub">ZOOTOPIA TYCOON</span>
+  </div>
+</div>
+
+<!-- HUD Top -->
+<div id="hud-top">
+  <div class="hud-chip"><span class="icon">🪙</span><span>코인</span><span class="val" id="hud-coins">3,000</span></div>
+  <div class="hud-chip green"><span class="icon">😊</span><span>만족도</span><span class="val" id="hud-sat">0%</span></div>
+  <div class="hud-chip blue"><span class="icon">🧹</span><span>청결도</span><span class="val" id="hud-clean">100%</span></div>
+  <div class="hud-chip purple"><span class="icon">👥</span><span>방문객</span><span class="val" id="hud-visitors">0</span></div>
+</div>
+
+<!-- Mode Bar (PC: 버튼 3개 + hint 패널 / 모바일: 버튼 3개 + ❓ 버튼) -->
+<div id="mode-bar">
+  <button class="mode-btn active" data-mode="build" onclick="setMode('build')">🔨<span class="mode-label"> 건설</span></button>
+  <button class="mode-btn inspect" data-mode="inspect" onclick="setMode('inspect')">🔍<span class="mode-label"> 점검</span></button>
+  <button class="mode-btn demolish" data-mode="demolish" onclick="setMode('demolish')">🗑️<span class="mode-label"> 철거</span></button>
+
+  <!-- 모바일 전용 ❓ 버튼 -->
+  <button id="hint-btn" onclick="toggleHintPopup()">❓<span class="hint-label"> 조작법</span></button>
+</div>
+
+<!-- 모바일 힌트 팝업 (탭 시 표시) -->
+<div id="hint-popup"></div>
+
+<!-- Reset Button -->
+<button id="reset-btn" onclick="confirmReset()">🔄 새로 하기</button>
+
+<!-- Bottom Toolbar -->
+<div id="toolbar">
+  <div id="tab-bar">
+    <button class="tab-btn" data-tab="paths" onclick="setTab('paths')">🛤️ 길</button>
+    <button class="tab-btn" data-tab="animals" onclick="setTab('animals')">🦁 동물</button>
+    <button class="tab-btn" data-tab="facilities" onclick="setTab('facilities')">🏪 시설</button>
+    <button class="tab-btn" data-tab="decorations" onclick="setTab('decorations')">🌳 장식</button>
+  </div>
+  <div id="item-row"></div>
+</div>
+
+<div id="tooltip"></div>
+<div id="notif"></div>
+
+
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONSTANTS & CONFIG
+// ══════════════════════════════════════════════════════════
+const TILE_W = 64, TILE_H = 32;
+const GRID_W = 24, GRID_H = 24;
+
+const ITEMS = {
+  paths: [
+    { id:'dirt_path',   emoji:'🟫', name:'흙길',      cost:10,  type:'path' },
+    { id:'stone_path',  emoji:'⬜', name:'돌길',      cost:20,  type:'path' },
+    { id:'pavement',    emoji:'🔲', name:'보도블록',  cost:30,  type:'path' },
+  ],
+  animals: [
+    { id:'lion',       emoji:'🦁', name:'사자',     cost:500, type:'animal', attract:15 },
+    { id:'giraffe',    emoji:'🦒', name:'기린',     cost:450, type:'animal', attract:12 },
+    { id:'elephant',   emoji:'🐘', name:'코끼리',   cost:600, type:'animal', attract:18 },
+    { id:'monkey',     emoji:'🐒', name:'원숭이',   cost:300, type:'animal', attract:10 },
+    { id:'penguin',    emoji:'🐧', name:'펭귄',     cost:350, type:'animal', attract:11 },
+    { id:'polar_bear', emoji:'🐻‍❄️', name:'북극곰',  cost:550, type:'animal', attract:16 },
+    { id:'fish',       emoji:'🐟', name:'물고기',   cost:100, type:'animal', attract:5  },
+    { id:'dolphin',    emoji:'🐬', name:'돌고래',   cost:800, type:'animal', attract:20 },
+  ],
+  facilities: [
+    { id:'food_stall',  emoji:'🍦', name:'음식 가판대', cost:200, type:'facility' },
+    { id:'restroom',    emoji:'🚻', name:'화장실',     cost:150, type:'facility' },
+    { id:'bench',       emoji:'🪑', name:'벤치',       cost:80,  type:'facility' },
+    { id:'trash_bin',   emoji:'🗑️', name:'쓰레기통',   cost:50,  type:'facility' },
+    { id:'shop',        emoji:'🏪', name:'기념품샵',    cost:300, type:'facility' },
+  ],
+  decorations: [
+    { id:'tree',        emoji:'🌳', name:'나무',      cost:60,  type:'deco' },
+    { id:'fountain',    emoji:'⛲', name:'분수대',    cost:200, type:'deco' },
+    { id:'signboard',   emoji:'🪧', name:'안내판',    cost:40,  type:'deco' },
+    { id:'streetlight', emoji:'💡', name:'가로등',    cost:70,  type:'deco' },
+  ],
+};
+
+// ══════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════
+let state = {
+  coins: 3000,
+  mode: 'build',
+  activeTab: 'paths',
+  selectedItem: null,
+  grid: {},          // "gx,gy" => { id, emoji, type, ... }
+  visitors: [],
+  tick: 0,
+  satisfaction: 0,
+  cleanliness: 100,
+  totalRevenue: 0,
+};
+
+// Camera
+let cam = { x: 0, y: 0, zoom: 1 };
+let drag = { active: false, startX: 0, startY: 0, camX: 0, camY: 0 };
+
+// Mouse
+let mouseWorld = { gx: 0, gy: 0 };
+
+// Canvas
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// ══════════════════════════════════════════════════════════
+//  ISOMETRIC UTILS
+// ══════════════════════════════════════════════════════════
+function gridToScreen(gx, gy) {
+  const sx = (gx - gy) * (TILE_W / 2);
+  const sy = (gx + gy) * (TILE_H / 2);
+  return { x: sx, y: sy };
+}
+
+function screenToGrid(sx, sy) {
+  // inverse isometric
+  const gx = (sx / (TILE_W / 2) + sy / (TILE_H / 2)) / 2;
+  const gy = (sy / (TILE_H / 2) - sx / (TILE_W / 2)) / 2;
+  return { gx: Math.floor(gx), gy: Math.floor(gy) };
+}
+
+function worldToCanvas(wx, wy) {
+  const cx = canvas.width / 2 + (wx + cam.x) * cam.zoom;
+  const cy = canvas.height / 2 + (wy + cam.y) * cam.zoom;
+  return { x: cx, y: cy };
+}
+
+function canvasToWorld(cx, cy) {
+  const wx = (cx - canvas.width / 2) / cam.zoom - cam.x;
+  const wy = (cy - canvas.height / 2) / cam.zoom - cam.y;
+  return { x: wx, y: wy };
+}
+
+function getHoveredTile(canvasX, canvasY) {
+  const w = canvasToWorld(canvasX, canvasY);
+  return screenToGrid(w.x, w.y);
+}
+
+// ══════════════════════════════════════════════════════════
+//  RESIZE
+// ══════════════════════════════════════════════════════════
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ══════════════════════════════════════════════════════════
+//  RENDERING
+// ══════════════════════════════════════════════════════════
+const GRASS_TOP    = ['#56c47a','#4db870','#62d488','#52c47c'];
+const GRASS_LEFT   = ['#3a9958','#348a50','#3fa862','#389a55'];
+const GRASS_RIGHT  = ['#2d7a45','#276e3d','#35894f','#2f7842'];
+const DEPTH = 6; // 타일 측면 두께 (픽셀, zoom 1 기준)
+
+const grassTop   = (gx, gy) => GRASS_TOP  [(gx * 3 + gy * 7) % GRASS_TOP.length];
+const grassLeft  = (gx, gy) => GRASS_LEFT [(gx * 3 + gy * 7) % GRASS_LEFT.length];
+const grassRight = (gx, gy) => GRASS_RIGHT[(gx * 3 + gy * 7) % GRASS_RIGHT.length];
+
+// 타일 상단 마름모(top face) 좌표 계산
+function tilePoints(gx, gy) {
+  const s = gridToScreen(gx, gy);
+  const c = worldToCanvas(s.x, s.y);
+  const hw = TILE_W / 2 * cam.zoom;
+  const hh = TILE_H / 2 * cam.zoom;
+  // top, right, bottom, left 순서 (마름모 꼭짓점)
+  return {
+    top:    { x: c.x,      y: c.y - hh },
+    right:  { x: c.x + hw, y: c.y      },
+    bottom: { x: c.x,      y: c.y + hh },
+    left:   { x: c.x - hw, y: c.y      },
+    cx: c.x,
+    cy: c.y,
+  };
+}
+
+// 아이소메트릭 블록: top face + 왼쪽 측면 + 오른쪽 측면
+function drawIsoTile(gx, gy, colorTop, colorLeft, colorRight, depthMul, strokeCol) {
+  const p  = tilePoints(gx, gy);
+  const d  = DEPTH * cam.zoom * depthMul;
+
+  // ── 왼쪽 측면 (left face) ──
+  ctx.beginPath();
+  ctx.moveTo(p.left.x,         p.left.y);
+  ctx.lineTo(p.bottom.x,       p.bottom.y);
+  ctx.lineTo(p.bottom.x,       p.bottom.y + d);
+  ctx.lineTo(p.left.x,         p.left.y   + d);
+  ctx.closePath();
+  ctx.fillStyle = colorLeft;
+  ctx.fill();
+
+  // ── 오른쪽 측면 (right face) ──
+  ctx.beginPath();
+  ctx.moveTo(p.bottom.x,       p.bottom.y);
+  ctx.lineTo(p.right.x,        p.right.y);
+  ctx.lineTo(p.right.x,        p.right.y  + d);
+  ctx.lineTo(p.bottom.x,       p.bottom.y + d);
+  ctx.closePath();
+  ctx.fillStyle = colorRight;
+  ctx.fill();
+
+  // ── 윗면 (top face) ──
+  ctx.beginPath();
+  ctx.moveTo(p.top.x,    p.top.y);
+  ctx.lineTo(p.right.x,  p.right.y);
+  ctx.lineTo(p.bottom.x, p.bottom.y);
+  ctx.lineTo(p.left.x,   p.left.y);
+  ctx.closePath();
+  ctx.fillStyle = colorTop;
+  ctx.fill();
+
+  if (strokeCol) {
+    ctx.strokeStyle = strokeCol;
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+}
+
+// 길 전용: top face에 직접 패턴/질감을 그려 "대지에 깔린" 표현
+function drawPathTile(gx, gy, cellId) {
+  const p = tilePoints(gx, gy);
+  const hw = TILE_W / 2 * cam.zoom;
+  const hh = TILE_H / 2 * cam.zoom;
+  const d  = DEPTH * cam.zoom * 0.35; // 길은 얕게 (살짝 낮은 블록)
+
+  let topColor, leftColor, rightColor, lineColor;
+
+  if (cellId === 'dirt_path') {
+    topColor   = '#c9975a';
+    leftColor  = '#8a6035';
+    rightColor = '#6e4a28';
+    lineColor  = '#7a5830';
+  } else if (cellId === 'stone_path') {
+    topColor   = '#a0a8b0';
+    leftColor  = '#606870';
+    rightColor = '#4a5258';
+    lineColor  = '#404850';
+  } else { // pavement
+    topColor   = '#7b99b0';
+    leftColor  = '#445c6e';
+    rightColor = '#324858';
+    lineColor  = '#283848';
+  }
+
+  // 측면
+  ctx.beginPath();
+  ctx.moveTo(p.left.x,   p.left.y);
+  ctx.lineTo(p.bottom.x, p.bottom.y);
+  ctx.lineTo(p.bottom.x, p.bottom.y + d);
+  ctx.lineTo(p.left.x,   p.left.y   + d);
+  ctx.closePath();
+  ctx.fillStyle = leftColor;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(p.bottom.x, p.bottom.y);
+  ctx.lineTo(p.right.x,  p.right.y);
+  ctx.lineTo(p.right.x,  p.right.y  + d);
+  ctx.lineTo(p.bottom.x, p.bottom.y + d);
+  ctx.closePath();
+  ctx.fillStyle = rightColor;
+  ctx.fill();
+
+  // 윗면 클리핑: 마름모 내부에만 패턴 그리기
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(p.top.x,    p.top.y);
+  ctx.lineTo(p.right.x,  p.right.y);
+  ctx.lineTo(p.bottom.x, p.bottom.y);
+  ctx.lineTo(p.left.x,   p.left.y);
+  ctx.closePath();
+  ctx.clip();
+
+  // 바탕색
+  ctx.fillStyle = topColor;
+  ctx.fill();
+
+  // 패턴 오버레이
+  if (cellId === 'dirt_path') {
+    // 흙길: 불규칙 점무늬
+    ctx.fillStyle = '#8a5020';
+    const seed = gx * 17 + gy * 31;
+    for (let i = 0; i < 6; i++) {
+      const ox = Math.sin(seed + i * 2.1) * hw * 0.55;
+      const oy = Math.cos(seed + i * 1.7) * hh * 0.55;
+      ctx.beginPath();
+      ctx.arc(p.cx + ox, p.cy + oy, 2 * cam.zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (cellId === 'stone_path') {
+    // 돌길: 격자 균열선 (아이소 축 방향)
+    ctx.strokeStyle = '#384048';
+    ctx.lineWidth = 1.2 * cam.zoom;
+    // 가로 균열
+    ctx.beginPath();
+    ctx.moveTo(p.left.x,  p.left.y  - hh * 0.1);
+    ctx.lineTo(p.right.x, p.right.y - hh * 0.1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.left.x,  p.left.y  + hh * 0.3);
+    ctx.lineTo(p.right.x, p.right.y + hh * 0.3);
+    ctx.stroke();
+    // 세로 균열
+    ctx.beginPath();
+    ctx.moveTo(p.top.x  - hw * 0.2, p.top.y);
+    ctx.lineTo(p.bottom.x - hw * 0.2, p.bottom.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.top.x  + hw * 0.3, p.top.y);
+    ctx.lineTo(p.bottom.x + hw * 0.3, p.bottom.y);
+    ctx.stroke();
+  } else {
+    // 보도블록: 타일 격자
+    ctx.strokeStyle = '#283848';
+    ctx.lineWidth = 1.5 * cam.zoom;
+    // 가로 2줄
+    for (const t of [-0.2, 0.2]) {
+      ctx.beginPath();
+      ctx.moveTo(p.left.x  + hw * 0.1, p.left.y  + hh * t);
+      ctx.lineTo(p.right.x - hw * 0.1, p.right.y + hh * t);
+      ctx.stroke();
+    }
+    // 세로 1줄 (중앙)
+    ctx.beginPath();
+    ctx.moveTo(p.cx, p.top.y    + hh * 0.15);
+    ctx.lineTo(p.cx, p.bottom.y - hh * 0.15);
+    ctx.stroke();
+    // 하이라이트
+    ctx.fillStyle = '#9ab8c8';
+    ctx.fillRect(p.cx - hw * 0.45, p.cy - hh * 0.35, hw * 0.4, hh * 0.25);
+  }
+
+  ctx.restore();
+
+  // 테두리
+  ctx.beginPath();
+  ctx.moveTo(p.top.x,    p.top.y);
+  ctx.lineTo(p.right.x,  p.right.y);
+  ctx.lineTo(p.bottom.x, p.bottom.y);
+  ctx.lineTo(p.left.x,   p.left.y);
+  ctx.closePath();
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 0.9;
+  ctx.stroke();
+}
+
+// 오브젝트(동물/시설/장식) 이모지: 타일 표면 중앙에 정확히 부착
+function drawObjectEmoji(gx, gy, cell) {
+  const p    = tilePoints(gx, gy);
+  const size = Math.max(16, TILE_W * 0.68 * cam.zoom);  // 크기 증가
+  const d    = DEPTH * cam.zoom * 0.8;
+
+  let offsetY = -d;
+  if (cell.type === 'animal') {
+    offsetY += Math.sin(Date.now() / 380 + gx * 1.3 + gy * 0.9) * 3.5 * cam.zoom;
+  }
+
+  ctx.globalAlpha  = 1;          // 투명도 완전 제거
+  ctx.font         = `${size}px serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(cell.emoji, p.cx, p.cy + offsetY);
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 배경
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, '#0d1b2a');
+  grad.addColorStop(1, '#152615');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // ── Pass 1: 타일 바닥 (back → front 순서) ──
+  for (let sum = 0; sum < GRID_W + GRID_H - 1; sum++) {
+    for (let gx = 0; gx <= sum; gx++) {
+      const gy = sum - gx;
+      if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) continue;
+
+      const key  = `${gx},${gy}`;
+      const cell = state.grid[key];
+
+      if (cell && cell.type === 'path') {
+        // 길: 대지에 깔린 표면 패턴
+        drawPathTile(gx, gy, cell.id);
+      } else {
+        // 잔디 or 오브젝트 타일
+        let topC   = grassTop(gx, gy);
+        let leftC  = grassLeft(gx, gy);
+        let rightC = grassRight(gx, gy);
+        let depthM = 1;
+        let strokeC = '#2a3a2a';
+
+        if (cell) {
+          if (cell.type === 'animal') {
+            topC = '#b8e090'; leftC = '#6ab840'; rightC = '#4e9028';
+            strokeC = '#3a8a30';
+          } else if (cell.type === 'facility') {
+            topC = '#a8d4f5'; leftC = '#4a90c8'; rightC = '#2e6ea0';
+            strokeC = '#1a70c0';
+          } else if (cell.type === 'deco') {
+            topC = '#c8f0b0'; leftC = '#6ac048'; rightC = '#4a9030';
+            strokeC = '#3a8a20';
+          }
+        }
+        drawIsoTile(gx, gy, topC, leftC, rightC, depthM, strokeC);
+      }
+    }
+  }
+
+  // ── Pass 2: 오브젝트 이모지 (동일 back→front 순서) ──
+  for (let sum = 0; sum < GRID_W + GRID_H - 1; sum++) {
+    for (let gx = 0; gx <= sum; gx++) {
+      const gy = sum - gx;
+      if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) continue;
+      const key  = `${gx},${gy}`;
+      const cell = state.grid[key];
+      if (cell && cell.type !== 'path') {
+        drawObjectEmoji(gx, gy, cell);
+      }
+    }
+  }
+
+  // ── Pass 3: 방문객 ──
+  drawVisitors();
+
+  // ── Pass 4: 건설 프리뷰 ──
+  if (state.mode === 'build' && state.selectedItem) {
+    const { gx, gy } = mouseWorld;
+    if (gx >= 0 && gx < GRID_W && gy >= 0 && gy < GRID_H) {
+      const canPlace = canPlaceAt(gx, gy);
+      const p  = tilePoints(gx, gy);
+      const hw = TILE_W / 2 * cam.zoom;
+      const hh = TILE_H / 2 * cam.zoom;
+      const d  = DEPTH * cam.zoom;
+      const overlayColor = canPlace ? 'rgba(76,175,80,0.38)' : 'rgba(233,69,96,0.38)';
+      const borderColor  = canPlace ? '#4caf50' : '#e94560';
+
+      // 측면 오버레이
+      ctx.beginPath();
+      ctx.moveTo(p.left.x, p.left.y); ctx.lineTo(p.bottom.x, p.bottom.y);
+      ctx.lineTo(p.bottom.x, p.bottom.y + d); ctx.lineTo(p.left.x, p.left.y + d);
+      ctx.closePath();
+      ctx.fillStyle = overlayColor; ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(p.bottom.x, p.bottom.y); ctx.lineTo(p.right.x, p.right.y);
+      ctx.lineTo(p.right.x, p.right.y + d); ctx.lineTo(p.bottom.x, p.bottom.y + d);
+      ctx.closePath();
+      ctx.fillStyle = overlayColor; ctx.fill();
+
+      // 상단 오버레이
+      ctx.beginPath();
+      ctx.moveTo(p.top.x, p.top.y); ctx.lineTo(p.right.x, p.right.y);
+      ctx.lineTo(p.bottom.x, p.bottom.y); ctx.lineTo(p.left.x, p.left.y);
+      ctx.closePath();
+      ctx.fillStyle = overlayColor;
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 프리뷰 이모지 (선명하게)
+      if (state.selectedItem.type !== 'path') {
+        const size = Math.max(16, TILE_W * 0.68 * cam.zoom);
+        ctx.globalAlpha = 1;
+        ctx.font = `${size}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(state.selectedItem.emoji, p.cx, p.cy - d);
+      }
+    }
+  }
+
+  // ── Pass 5: 철거 모드 하이라이트 ──
+  if (state.mode === 'demolish') {
+    const { gx, gy } = mouseWorld;
+    if (gx >= 0 && gx < GRID_W && gy >= 0 && gy < GRID_H && state.grid[`${gx},${gy}`]) {
+      const p  = tilePoints(gx, gy);
+      const hw = TILE_W / 2 * cam.zoom;
+      const hh = TILE_H / 2 * cam.zoom;
+      ctx.beginPath();
+      ctx.moveTo(p.top.x, p.top.y); ctx.lineTo(p.right.x, p.right.y);
+      ctx.lineTo(p.bottom.x, p.bottom.y); ctx.lineTo(p.left.x, p.left.y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,87,34,0.42)';
+      ctx.fill();
+      ctx.strokeStyle = '#ff5722';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+  }
+
+  requestAnimationFrame(render);
+}
+
+// ══════════════════════════════════════════════════════════
+//  PATHFINDING & VISITORS
+// ══════════════════════════════════════════════════════════
+const VISITOR_EMOJIS = ['👦','👧','👨','👩','🧑','👴','👵','🧔','👱'];
+const BUBBLE_EMOJIS  = { happy:'😊', hungry:'🍔', dirty:'😤', bored:'😴', excited:'🤩' };
+
+// 길 타일 여부 판단 (path 타입만 허용)
+function isPathTile(gx, gy) {
+  const key = `${Math.round(gx)},${Math.round(gy)}`;
+  const cell = state.grid[key];
+  return cell && cell.type === 'path';
+}
+
+// 그리드 상 모든 길 타일 목록 반환
+function getAllPathTiles() {
+  return Object.keys(state.grid)
+    .filter(k => state.grid[k].type === 'path')
+    .map(k => { const [x, y] = k.split(','); return { gx: +x, gy: +y }; });
+}
+
+// BFS: 시작 타일에서 도달 가능한 모든 연결된 길 타일 반환
+function getReachablePathTiles(startGx, startGy) {
+  const visited = new Set();
+  const queue   = [{ gx: startGx, gy: startGy }];
+  const result  = [];
+  const DIRS    = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+
+  visited.add(`${startGx},${startGy}`);
+
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    result.push(cur);
+    for (const d of DIRS) {
+      const nx = cur.gx + d.dx;
+      const ny = cur.gy + d.dy;
+      const nk = `${nx},${ny}`;
+      if (!visited.has(nk) && isPathTile(nx, ny)) {
+        visited.add(nk);
+        queue.push({ gx: nx, gy: ny });
+      }
+    }
+  }
+  return result;
+}
+
+// BFS 최단경로: start → goal, 길 타일만 통과
+// 반환값: 다음 이동할 타일 {gx, gy} 또는 null (경로 없음)
+function bfsNextStep(startGx, startGy, goalGx, goalGy) {
+  if (startGx === goalGx && startGy === goalGy) return null;
+
+  const visited = new Set();
+  const startKey = `${startGx},${startGy}`;
+  const goalKey  = `${goalGx},${goalGy}`;
+  const queue    = [{ gx: startGx, gy: startGy, path: [] }];
+  const DIRS     = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+
+  visited.add(startKey);
+
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    for (const d of DIRS) {
+      const nx  = cur.gx + d.dx;
+      const ny  = cur.gy + d.dy;
+      const nk  = `${nx},${ny}`;
+      if (visited.has(nk)) continue;
+      if (!isPathTile(nx, ny)) continue;
+      visited.add(nk);
+      const newPath = [...cur.path, { gx: nx, gy: ny }];
+      if (nk === goalKey) {
+        // 경로 첫 번째 스텝 반환
+        return newPath[0];
+      }
+      queue.push({ gx: nx, gy: ny, path: newPath });
+    }
+  }
+  return null; // 경로 없음
+}
+
+// 방문객 스폰: 반드시 길 타일 위에서만 시작
+function spawnVisitor() {
+  const paths = getAllPathTiles();
+  if (paths.length === 0) return; // 길이 없으면 스폰 안 함
+
+  // 스폰 위치: 길 타일 중 랜덤
+  const spawn = paths[Math.floor(Math.random() * paths.length)];
+
+  state.visitors.push({
+    id:           Math.random(),
+    emoji:        VISITOR_EMOJIS[Math.floor(Math.random() * VISITOR_EMOJIS.length)],
+    gx:           spawn.gx + 0.5,  // 타일 중심
+    gy:           spawn.gy + 0.5,
+    tileGx:       spawn.gx,        // 현재 점유 타일(정수)
+    tileGy:       spawn.gy,
+    tx:           spawn.gx + 0.5,  // 픽셀 이동 목표 (타일 중심)
+    ty:           spawn.gy + 0.5,
+    nextTile:     null,            // BFS로 구한 다음 목표 타일
+    goalTile:     null,            // 최종 목적지 타일
+    waitTimer:    0,               // 목적지 도착 후 대기 시간
+    status:       'happy',
+    satisfaction: 80 + Math.random() * 20,
+    hunger:       Math.random() * 50,
+    cleanSense:   Math.random() * 30,
+    bouncePhase:  Math.random() * Math.PI * 2,
+    revenue:      0,
+    spendTimer:   0,
+  });
+}
+
+// 방문객의 다음 목적지 타일을 새로 설정
+function assignNewGoal(v) {
+  const curTileGx = Math.floor(v.gx);
+  const curTileGy = Math.floor(v.gy);
+
+  // 현재 위치에서 연결된 길 타일만 탐색
+  const reachable = getReachablePathTiles(curTileGx, curTileGy);
+  if (reachable.length <= 1) {
+    v.goalTile = null;
+    return;
+  }
+
+  // 현재 타일 제외하고 랜덤 목적지 선택
+  const candidates = reachable.filter(t => t.gx !== curTileGx || t.gy !== curTileGy);
+  const goal = candidates[Math.floor(Math.random() * candidates.length)];
+  v.goalTile = goal;
+}
+
+function updateVisitors(dt) {
+  for (const v of state.visitors) {
+    v.bouncePhase += dt * 3;
+    v.spendTimer  -= dt;
+
+    // 상태 말풍선 결정
+    if (v.hunger > 70)           v.status = 'hungry';
+    else if (v.cleanSense > 60)  v.status = 'dirty';
+    else if (v.satisfaction > 85) v.status = 'excited';
+    else if (v.satisfaction < 40) v.status = 'bored';
+    else                          v.status = 'happy';
+
+    // 수익 생성
+    if (v.spendTimer <= 0) {
+      v.spendTimer = 8 + Math.random() * 12;
+      const earn = 5 + Math.floor(Math.random() * 15);
+      state.coins += earn;
+      state.totalRevenue += earn;
+    }
+
+    // ── 경로 추적 이동 ──
+    const curTileGx = Math.floor(v.gx);
+    const curTileGy = Math.floor(v.gy);
+
+    // 대기 중이면 타이머 감소
+    if (v.waitTimer > 0) {
+      v.waitTimer -= dt;
+    } else {
+      // 목적지가 없거나 도착하면 새 목적지 할당
+      if (!v.goalTile ||
+          (curTileGx === v.goalTile.gx && curTileGy === v.goalTile.gy)) {
+        v.waitTimer = 0.5 + Math.random() * 1.5; // 도착 후 잠깐 대기
+        assignNewGoal(v);
+      }
+
+      // BFS로 다음 스텝 결정
+      if (v.goalTile) {
+        const next = bfsNextStep(curTileGx, curTileGy, v.goalTile.gx, v.goalTile.gy);
+        if (next) {
+          v.nextTile = next;
+          // 목표를 다음 타일 중심으로 설정
+          v.tx = next.gx + 0.5;
+          v.ty = next.gy + 0.5;
+        } else {
+          // 경로 없음 → 새 목적지 재탐색
+          assignNewGoal(v);
+        }
+      }
+
+      // 목표 지점으로 이동 (타일 중심에 스냅)
+      const dx   = v.tx - v.gx;
+      const dy   = v.ty - v.gy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 0.04) {
+        const speed = 2.2 * dt;
+        v.gx += (dx / dist) * Math.min(speed, dist);
+        v.gy += (dy / dist) * Math.min(speed, dist);
+      } else {
+        // 타일 중심에 정확히 스냅
+        v.gx = v.tx;
+        v.gy = v.ty;
+      }
+    }
+
+    // 스탯 변화
+    v.hunger      = Math.min(100, v.hunger      + dt * 2);
+    v.cleanSense  = Math.min(100, v.cleanSense  + dt * 1);
+    v.satisfaction = Math.max(0, Math.min(100, v.satisfaction - dt * 0.4));
+  }
+
+  // 만족도 낮은 방문객 퇴장
+  state.visitors = state.visitors.filter(v => v.satisfaction > 5);
+
+  // 전체 지표 계산
+  if (state.visitors.length > 0) {
+    state.satisfaction = Math.round(
+      state.visitors.reduce((a, v) => a + v.satisfaction, 0) / state.visitors.length
+    );
+    state.cleanliness = Math.round(
+      Math.max(0, 100 - state.visitors.reduce((a, v) => a + v.cleanSense, 0) / state.visitors.length * 0.5)
+    );
+  } else {
+    state.cleanliness = 100;
+  }
+}
+
+function drawVisitors() {
+  for (const v of state.visitors) {
+    const s      = gridToScreen(v.gx, v.gy);
+    const c      = worldToCanvas(s.x, s.y);
+    const d      = DEPTH * cam.zoom * 0.9;
+    const bounce = Math.sin(v.bouncePhase) * 2.5 * cam.zoom;
+    const size   = Math.max(12, 24 * cam.zoom);  // 크기 증가
+    const cx = c.x;
+    const cy = c.y - d + bounce;
+
+    // 방문객 (투명도 없이 선명하게)
+    ctx.globalAlpha  = 1;
+    ctx.font = `${size}px serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(v.emoji, cx, cy);
+
+    // 말풍선
+    if (cam.zoom > 0.55) {
+      const bEmoji = BUBBLE_EMOJIS[v.status] || '😊';
+      ctx.globalAlpha = 1;
+      ctx.font = `${size * 0.7}px serif`;
+      ctx.fillText(bEmoji, cx + size * 0.55, cy - size * 0.68);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  GAME LOGIC
+// ══════════════════════════════════════════════════════════
+function canPlaceAt(gx, gy) {
+  if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) return false;
+  const key = `${gx},${gy}`;
+  return !state.grid[key];
+}
+
+function placeItem(gx, gy) {
+  if (!state.selectedItem) return;
+  if (!canPlaceAt(gx, gy)) {
+    showNotif('⚠️ 여기에는 배치할 수 없습니다!');
+    return;
+  }
+  if (state.coins < state.selectedItem.cost) {
+    showNotif('💸 코인이 부족합니다!');
+    return;
+  }
+  state.coins -= state.selectedItem.cost;
+  const key = `${gx},${gy}`;
+  state.grid[key] = {
+    id: state.selectedItem.id,
+    emoji: state.selectedItem.emoji,
+    type: state.selectedItem.type,
+    attract: state.selectedItem.attract || 0,
+  };
+  updateHUD();
+}
+
+function demolishAt(gx, gy) {
+  const key = `${gx},${gy}`;
+  if (state.grid[key]) {
+    delete state.grid[key];
+    state.coins += 10; // refund
+    updateHUD();
+    showNotif('🗑️ 철거 완료! (+10 코인)');
+  }
+}
+
+function inspectAt(gx, gy) {
+  const key = `${gx},${gy}`;
+  const cell = state.grid[key];
+  const tt = document.getElementById('tooltip');
+  if (cell) {
+    tt.innerHTML = `
+      <strong>${cell.emoji} ${cell.id}</strong><br>
+      <span style="color:var(--ui-muted)">타입: ${cell.type}</span><br>
+      ${cell.attract ? `<span style="color:var(--ui-green)">매력도: +${cell.attract}</span>` : ''}
+    `;
+    tt.style.display = 'block';
+  } else {
+    tt.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  UI UPDATES
+// ══════════════════════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('hud-coins').textContent = state.coins.toLocaleString();
+  document.getElementById('hud-sat').textContent = state.satisfaction + '%';
+  document.getElementById('hud-clean').textContent = state.cleanliness + '%';
+  document.getElementById('hud-visitors').textContent = state.visitors.length;
+}
+
+// 모바일 힌트 팝업 토글
+function toggleHintPopup() {
+  const popup = document.getElementById('hint-popup');
+  const btn   = document.getElementById('hint-btn');
+  if (!popup || !btn) return;
+
+  const isVisible = popup.classList.contains('visible');
+
+  if (isVisible) {
+    // 닫기
+    popup.classList.remove('visible');
+    btn.classList.remove('active');
+    clearTimeout(popup._timer);
+  } else {
+    // 열기: 내용 세팅
+    popup.innerHTML = isMobile()
+      ? '👆 드래그 → 화면 이동<br>🤏 핀치 → 줌 인/아웃<br>👆 탭 → 건설 / 철거'
+      : '🖱️ 드래그 → 화면 이동<br>🖱️ 휠 → 줌 인/아웃<br>🔨 건설 → 아이템 선택 후 클릭<br>🔍 점검 → 타일 정보 확인<br>🗑️ 철거 → 배치 오브젝트 제거';
+
+    // 버튼 바로 아래 중앙 배치
+    // visibility:hidden으로 먼저 렌더링해 실제 크기를 구함
+    popup.style.visibility = 'hidden';
+    popup.style.top  = '0px';
+    popup.style.left = '0px';
+    popup.style.right = '';
+    popup.style.bottom = '';
+    popup.classList.add('visible');
+
+    const btnRect   = btn.getBoundingClientRect();
+    const popW      = popup.offsetWidth;
+    const popH      = popup.offsetHeight;
+    const GAP       = 8; // 버튼과 팝업 사이 간격
+
+    // 팝업 left: 버튼 중앙 기준 → 화면 밖으로 나가지 않도록 클램프
+    let left = btnRect.left + btnRect.width / 2 - popW / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - popW - 8));
+
+    // 팝업 top: 버튼 하단 + GAP
+    let top = btnRect.bottom + GAP;
+    // 화면 아래로 넘치면 버튼 위쪽에 표시
+    if (top + popH > window.innerHeight - 8) {
+      top = btnRect.top - popH - GAP;
+    }
+
+    popup.style.left = left + 'px';
+    popup.style.top  = top  + 'px';
+    popup.style.visibility = '';
+
+    btn.classList.add('active');
+
+    // 5초 후 자동 닫힘
+    clearTimeout(popup._timer);
+    popup._timer = setTimeout(() => {
+      popup.classList.remove('visible');
+      btn.classList.remove('active');
+    }, 5000);
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  RESET GAME
+// ══════════════════════════════════════════════════════════
+function confirmReset() {
+  if (!confirm('🔄 게임을 처음부터 다시 시작할까요?\n현재 진행 상황이 모두 초기화됩니다.')) return;
+  resetGame();
+}
+
+function resetGame() {
+  // ① 게임 루프가 돌아가는 동안 방문객 처리 막기 위해 먼저 비움
+  state.visitors     = [];
+  spawnTimer         = 5; // 리셋 후 5초 뒤부터 재스폰
+
+  // ② 그리드 초기화 후 초기 타일 재배치
+  state.grid = {};
+  for (let i = 0; i < 5; i++) {
+    state.grid[`1,${i}`] = { id:'dirt_path', emoji:'🟫', type:'path' };
+    state.grid[`${i},1`] = { id:'dirt_path', emoji:'🟫', type:'path' };
+  }
+  state.grid['3,3'] = { id:'lion',       emoji:'🦁', type:'animal',   attract:15 };
+  state.grid['5,3'] = { id:'penguin',    emoji:'🐧', type:'animal',   attract:11 };
+  state.grid['7,5'] = { id:'elephant',   emoji:'🐘', type:'animal',   attract:18 };
+  state.grid['3,5'] = { id:'food_stall', emoji:'🍦', type:'facility'            };
+  state.grid['8,3'] = { id:'tree',       emoji:'🌳', type:'deco'                };
+  state.grid['6,7'] = { id:'fountain',   emoji:'⛲', type:'deco'                };
+  for (let i = 2; i < 9; i++) {
+    state.grid[`${i},2`] = { id:'stone_path', emoji:'⬜', type:'path' };
+    state.grid[`2,${i}`] = { id:'stone_path', emoji:'⬜', type:'path' };
+  }
+  for (let i = 3; i < 8; i++) {
+    state.grid[`${i},6`] = { id:'pavement', emoji:'🔲', type:'path' };
+    state.grid[`8,${i}`] = { id:'pavement', emoji:'🔲', type:'path' };
+  }
+
+  // ③ 나머지 수치 초기화
+  state.coins        = 3000;
+  state.tick         = 0;
+  state.satisfaction = 0;
+  state.cleanliness  = 100;
+  state.totalRevenue = 0;
+  state.selectedItem = null;
+
+  // ④ UI 상태 초기화 (그리드 세팅 완료 후 호출)
+  setMode('build');
+  setTab('paths');
+  document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+
+  // ⑤ 카메라 리셋
+  const centerS = gridToScreen(GRID_W / 2, GRID_H / 2);
+  cam.x    = -centerS.x;
+  cam.y    = -centerS.y - 40;
+  cam.zoom = isMobile() ? 0.55 : 1.0;
+
+  updateHUD();
+  showNotif('🔄 게임이 초기화되었습니다!');
+}
+
+let notifTimer = null;
+function showNotif(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function setMode(m) {
+  state.mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === m);
+  });
+  if (m !== 'build') {
+    state.selectedItem = null;
+    document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+  }
+  const tooltip = document.getElementById('tooltip');
+  if (m !== 'inspect') tooltip.style.display = 'none';
+
+  // 모드별 커서 클래스 전환
+  canvas.classList.remove('mode-build', 'mode-demolish', 'mode-inspect');
+  canvas.classList.add('mode-' + m);
+}
+
+function setTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  state.selectedItem = null;
+  renderItemRow();
+}
+
+function renderItemRow() {
+  const row = document.getElementById('item-row');
+  row.innerHTML = '';
+  const items = ITEMS[state.activeTab] || [];
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <span class="emoji">${item.emoji}</span>
+      <div class="name">${item.name}</div>
+      <div class="cost">🪙 ${item.cost}</div>
+    `;
+    card.onclick = () => {
+      state.selectedItem = item;
+      state.mode = 'build';
+      setMode('build');
+      document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    };
+    row.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  INPUT HANDLING (Mouse + Touch + Pinch Zoom)
+// ══════════════════════════════════════════════════════════
+
+// 모바일 감지
+const isMobile = () => window.innerWidth <= 600 ||
+  ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+// 캔버스 기준 좌표 추출 (마우스/터치 공통)
+function getCanvasPos(e) {
+  const rect   = canvas.getBoundingClientRect();
+  const touch  = e.touches && e.touches[0];
+  const clientX = touch ? touch.clientX : e.clientX;
+  const clientY = touch ? touch.clientY : e.clientY;
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+// 두 터치 포인트 간 거리
+function getTouchDist(e) {
+  if (e.touches.length < 2) return 0;
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// 두 터치 포인트 중심 (캔버스 좌표)
+function getTouchCenter(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left,
+    y: ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top,
+  };
+}
+
+// 핀치 줌 상태
+let pinch = { active: false, startDist: 0, startZoom: 1 };
+
+// ── 공통 시작 처리 ──
+function onPointerDown(canvasX, canvasY) {
+  drag.active = true;
+  drag.startX = canvasX;
+  drag.startY = canvasY;
+  drag.camX   = cam.x;
+  drag.camY   = cam.y;
+  drag.moved  = false;
+}
+
+// ── 공통 이동 처리 ──
+function onPointerMove(canvasX, canvasY, clientX, clientY) {
+  const { gx, gy } = getHoveredTile(canvasX, canvasY);
+  mouseWorld.gx = gx;
+  mouseWorld.gy = gy;
+
+  if (drag.active) {
+    const dx = canvasX - drag.startX;
+    const dy = canvasY - drag.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) drag.moved = true;
+    cam.x = drag.camX + dx / cam.zoom;
+    cam.y = drag.camY + dy / cam.zoom;
+  }
+
+  if (state.mode === 'inspect') {
+    inspectAt(gx, gy);
+    const tt = document.getElementById('tooltip');
+    if (tt.style.display === 'block') {
+      tt.style.left = (clientX + 14) + 'px';
+      tt.style.top  = (clientY - 14) + 'px';
+    }
+  }
+}
+
+// ── 공통 종료 처리 (탭/클릭) ──
+function onPointerUp(canvasX, canvasY) {
+  if (!drag.moved) {
+    const { gx, gy } = getHoveredTile(canvasX, canvasY);
+    if (state.mode === 'build' && state.selectedItem) {
+      placeItem(gx, gy);
+    } else if (state.mode === 'demolish') {
+      demolishAt(gx, gy);
+    } else if (state.mode === 'inspect') {
+      // 모바일에서는 tap으로 점검
+      inspectAt(gx, gy);
+      const tt = document.getElementById('tooltip');
+      if (tt.style.display === 'block') {
+        tt.style.left = (canvasX + 14) + 'px';
+        tt.style.top  = (canvasY - 14) + 'px';
+      }
+    }
+  }
+  drag.active = false;
+  drag.moved  = false;
+}
+
+// ── MOUSE EVENTS ──
+canvas.addEventListener('mousedown', e => {
+  const pos = getCanvasPos(e);
+  onPointerDown(pos.x, pos.y);
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getCanvasPos(e);
+  onPointerMove(pos.x, pos.y, e.clientX, e.clientY);
+});
+
+canvas.addEventListener('mouseup', e => {
+  const pos = getCanvasPos(e);
+  onPointerUp(pos.x, pos.y);
+});
+
+canvas.addEventListener('mouseleave', () => {
+  drag.active = false;
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY > 0 ? 0.9 : 1.1;
+  cam.zoom = Math.max(0.3, Math.min(2.5, cam.zoom * factor));
+}, { passive: false });
+
+// ── TOUCH EVENTS ──
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    // 단일 터치: 드래그/탭
+    pinch.active = false;
+    const pos = getCanvasPos(e);
+    onPointerDown(pos.x, pos.y);
+  } else if (e.touches.length === 2) {
+    // 두 손가락: 핀치 줌 시작
+    drag.active   = false;
+    pinch.active  = true;
+    pinch.startDist = getTouchDist(e);
+    pinch.startZoom = cam.zoom;
+    // 핀치 중심 기준으로 카메라 고정
+    const center = getTouchCenter(e);
+    pinch.centerX = center.x;
+    pinch.centerY = center.y;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2 && pinch.active) {
+    // 핀치 줌
+    const dist   = getTouchDist(e);
+    const factor = dist / pinch.startDist;
+    const newZoom = Math.max(0.3, Math.min(2.5, pinch.startZoom * factor));
+
+    // 핀치 중심점이 화면상 같은 위치에 유지되도록 카메라 보정
+    const center = getTouchCenter(e);
+    const wx = (center.x - canvas.width  / 2) / cam.zoom - cam.x;
+    const wy = (center.y - canvas.height / 2) / cam.zoom - cam.y;
+    cam.zoom = newZoom;
+    cam.x = (center.x - canvas.width  / 2) / cam.zoom - wx;
+    cam.y = (center.y - canvas.height / 2) / cam.zoom - wy;
+  } else if (e.touches.length === 1 && !pinch.active) {
+    // 단일 터치 이동
+    const pos = getCanvasPos(e);
+    onPointerMove(pos.x, pos.y, e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (pinch.active && e.touches.length < 2) {
+    pinch.active = false;
+    drag.active  = false;
+    return;
+  }
+  if (!pinch.active && e.changedTouches.length > 0) {
+    const rect = canvas.getBoundingClientRect();
+    const t    = e.changedTouches[0];
+    onPointerUp(t.clientX - rect.left, t.clientY - rect.top);
+  }
+}, { passive: false });
+
+// ══════════════════════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════════════════════
+let lastTime = 0;
+let spawnTimer = 0;
+
+function gameLoop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+  lastTime = timestamp;
+
+  state.tick++;
+  spawnTimer -= dt;
+
+  // Spawn visitors periodically
+  const maxVisitors = 5 + Math.floor(Object.keys(state.grid).length / 4);
+  if (spawnTimer <= 0 && state.visitors.length < maxVisitors) {
+    spawnTimer = 4 + Math.random() * 6;
+    spawnVisitor();
+  }
+
+  updateVisitors(dt);
+  updateHUD();
+
+  setTimeout(() => requestAnimationFrame(gameLoop), 16);
+}
+
+// ══════════════════════════════════════════════════════════
+//  INITIALIZATION
+// ══════════════════════════════════════════════════════════
+function init() {
+  // Center camera on grid center
+  const centerS = gridToScreen(GRID_W / 2, GRID_H / 2);
+  cam.x = -centerS.x;
+  cam.y = -centerS.y - 40;
+  // 모바일에서는 더 작은 초기 줌 (그리드 전체가 보이도록)
+  cam.zoom = isMobile() ? 0.55 : 1.0;
+
+  // Place entrance path
+  for (let i = 0; i < 5; i++) {
+    state.grid[`${1},${i}`] = { id:'dirt_path', emoji:'🟫', type:'path' };
+    state.grid[`${i},${1}`] = { id:'dirt_path', emoji:'🟫', type:'path' };
+  }
+
+  // Initial items
+  state.grid['3,3'] = { id:'lion', emoji:'🦁', type:'animal', attract:15 };
+  state.grid['5,3'] = { id:'penguin', emoji:'🐧', type:'animal', attract:11 };
+  state.grid['7,5'] = { id:'elephant', emoji:'🐘', type:'animal', attract:18 };
+  state.grid['3,5'] = { id:'food_stall', emoji:'🍦', type:'facility' };
+  state.grid['8,3'] = { id:'tree', emoji:'🌳', type:'deco' };
+  state.grid['6,7'] = { id:'fountain', emoji:'⛲', type:'deco' };
+
+  // Paths connecting
+  for (let i = 2; i < 9; i++) {
+    state.grid[`${i},2`] = { id:'stone_path', emoji:'⬜', type:'path' };
+    state.grid[`2,${i}`] = { id:'stone_path', emoji:'⬜', type:'path' };
+  }
+  for (let i = 3; i < 8; i++) {
+    state.grid[`${i},6`] = { id:'pavement', emoji:'🔲', type:'path' };
+    state.grid[`8,${i}`] = { id:'pavement', emoji:'🔲', type:'path' };
+  }
+
+  // UI
+  setTab('paths');
+  document.querySelector('.tab-btn[data-tab="paths"]').classList.add('active');
+
+  // Start loops
+  render();
+  requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
+
+  // hint-popup 내용은 toggleHintPopup() 호출 시 동적으로 세팅됨
+
+  // 리셋 버튼: toolbar 바로 위에 배치
+  const resetBtn  = document.getElementById('reset-btn');
+  const toolbarEl = document.getElementById('toolbar');
+  if (resetBtn && toolbarEl) {
+    const tbH = toolbarEl.offsetHeight;
+    resetBtn.style.bottom  = (tbH + 8) + 'px';
+    resetBtn.style.display = 'block';
+  }
+
+  // 초기 커서 클래스 적용
+  canvas.classList.add('mode-build');
+  showNotif('🦁 Zootopia Tycoon에 오신 것을 환영합니다!');
+}
+
+init();
+</script>
+</body>
+</html>
