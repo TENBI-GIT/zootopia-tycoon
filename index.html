@@ -88,16 +88,17 @@
     70%       { transform: translateY(-2px) rotate(-2deg); }
   }
 
-  /* 모바일: 타이틀 아이콘만 표시 */
+  /* 모바일: 타이틀 1행 / HUD 2행으로 분리 */
   @media (max-width: 600px) {
     #game-title {
       top: 8px; left: 8px;
-      padding: 6px 10px 6px 8px;
+      padding: 5px 12px 5px 8px;
       gap: 5px;
+      border-radius: 40px;
     }
-    #game-title .title-icon { font-size: 18px; }
+    #game-title .title-icon { font-size: 16px; }
     #game-title .title-main { font-size: 11px; }
-    #game-title .title-sub  { font-size: 9px; }
+    #game-title .title-sub  { font-size: 8px; letter-spacing: 0.3px; }
   }
 
   /* ── HUD TOP ── */
@@ -227,6 +228,34 @@
   .item-card .name { font-size: 11px; font-weight: 700; color: var(--ui-muted); }
   .item-card .cost { font-size: 11px; font-weight: 800; color: var(--ui-gold); }
 
+
+  /* ── RESET BUTTON ── */
+  #reset-btn {
+    position: fixed;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    background: rgba(233,69,96,0.92);
+    border: 1.5px solid rgba(255,100,120,0.5);
+    border-radius: 50px;
+    padding: 8px 22px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: #fff;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(233,69,96,0.4);
+    transition: all 0.2s;
+    display: none; /* JS로 toolbar 위에 표시 */
+  }
+  #reset-btn:hover {
+    background: rgba(233,69,96,1);
+    transform: translateX(-50%) scale(1.05);
+  }
+  @media (max-width: 600px) {
+    #reset-btn { font-size: 12px; padding: 7px 18px; }
+  }
   /* ── TOOLTIP ── */
   #tooltip {
     position: fixed;
@@ -322,15 +351,15 @@
 
   /* ══ MOBILE RESPONSIVE ══ */
   @media (max-width: 600px) {
-    /* HUD: 2×2 그리드 */
+    /* HUD: 타이틀(1행) 아래 두 번째 줄 */
     #hud-top {
-      top: 8px;
-      gap: 5px;
-      flex-wrap: wrap;
-      justify-content: center;
-      max-width: calc(100vw - 90px); /* 모드 버튼 공간 확보 */
+      top: 46px;           /* 타이틀(약 36px) + 여유 10px */
       left: 8px;
       transform: none;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      max-width: calc(100vw - 70px); /* 우측 모드바 공간 확보 */
     }
     .hud-chip {
       padding: 5px 10px;
@@ -467,6 +496,9 @@
 
 <!-- 모바일 힌트 팝업 (탭 시 표시) -->
 <div id="hint-popup"></div>
+
+<!-- Reset Button -->
+<button id="reset-btn" onclick="confirmReset()">🔄 새로 하기</button>
 
 <!-- Bottom Toolbar -->
 <div id="toolbar">
@@ -1306,6 +1338,64 @@ function toggleHintPopup() {
   }
 }
 
+
+// ══════════════════════════════════════════════════════════
+//  RESET GAME
+// ══════════════════════════════════════════════════════════
+function confirmReset() {
+  if (!confirm('🔄 게임을 처음부터 다시 시작할까요?\n현재 진행 상황이 모두 초기화됩니다.')) return;
+  resetGame();
+}
+
+function resetGame() {
+  // ① 게임 루프가 돌아가는 동안 방문객 처리 막기 위해 먼저 비움
+  state.visitors     = [];
+  spawnTimer         = 5; // 리셋 후 5초 뒤부터 재스폰
+
+  // ② 그리드 초기화 후 초기 타일 재배치
+  state.grid = {};
+  for (let i = 0; i < 5; i++) {
+    state.grid[`1,${i}`] = { id:'dirt_path', emoji:'🟫', type:'path' };
+    state.grid[`${i},1`] = { id:'dirt_path', emoji:'🟫', type:'path' };
+  }
+  state.grid['3,3'] = { id:'lion',       emoji:'🦁', type:'animal',   attract:15 };
+  state.grid['5,3'] = { id:'penguin',    emoji:'🐧', type:'animal',   attract:11 };
+  state.grid['7,5'] = { id:'elephant',   emoji:'🐘', type:'animal',   attract:18 };
+  state.grid['3,5'] = { id:'food_stall', emoji:'🍦', type:'facility'            };
+  state.grid['8,3'] = { id:'tree',       emoji:'🌳', type:'deco'                };
+  state.grid['6,7'] = { id:'fountain',   emoji:'⛲', type:'deco'                };
+  for (let i = 2; i < 9; i++) {
+    state.grid[`${i},2`] = { id:'stone_path', emoji:'⬜', type:'path' };
+    state.grid[`2,${i}`] = { id:'stone_path', emoji:'⬜', type:'path' };
+  }
+  for (let i = 3; i < 8; i++) {
+    state.grid[`${i},6`] = { id:'pavement', emoji:'🔲', type:'path' };
+    state.grid[`8,${i}`] = { id:'pavement', emoji:'🔲', type:'path' };
+  }
+
+  // ③ 나머지 수치 초기화
+  state.coins        = 3000;
+  state.tick         = 0;
+  state.satisfaction = 0;
+  state.cleanliness  = 100;
+  state.totalRevenue = 0;
+  state.selectedItem = null;
+
+  // ④ UI 상태 초기화 (그리드 세팅 완료 후 호출)
+  setMode('build');
+  setTab('paths');
+  document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+
+  // ⑤ 카메라 리셋
+  const centerS = gridToScreen(GRID_W / 2, GRID_H / 2);
+  cam.x    = -centerS.x;
+  cam.y    = -centerS.y - 40;
+  cam.zoom = isMobile() ? 0.55 : 1.0;
+
+  updateHUD();
+  showNotif('🔄 게임이 초기화되었습니다!');
+}
+
 let notifTimer = null;
 function showNotif(msg) {
   const el = document.getElementById('notif');
@@ -1611,6 +1701,15 @@ function init() {
   requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
 
   // hint-popup 내용은 toggleHintPopup() 호출 시 동적으로 세팅됨
+
+  // 리셋 버튼: toolbar 바로 위에 배치
+  const resetBtn  = document.getElementById('reset-btn');
+  const toolbarEl = document.getElementById('toolbar');
+  if (resetBtn && toolbarEl) {
+    const tbH = toolbarEl.offsetHeight;
+    resetBtn.style.bottom  = (tbH + 8) + 'px';
+    resetBtn.style.display = 'block';
+  }
 
   // 초기 커서 클래스 적용
   canvas.classList.add('mode-build');
