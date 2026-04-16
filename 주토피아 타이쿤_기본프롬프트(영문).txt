@@ -1,0 +1,166 @@
+Create a fully interactive isometric zoo management simulation game that runs in a web browser.
+Complete it as a playable, error-free version, not a prototype.
+
+#Game Title {"Zootopia Tycoon"}
+
+#Core Engine (MVP First) {
+- Platform: * Pure web browser environment (HTML + CSS + JS, Canvas or WebGL), responsive
+- Map Type:
+* Isometric grid (16x16, expandable),
+* Object tile-based placement system
+- Camera:
+* Mouse drag → screen movement (pan)
+* Mouse wheel → zoom in/out
+* Keep the map centered by default (allow movement)
+- Modes:
+1) Build Mode
+2) Inspect Mode
+3) Demolish Mode
+}
+
+#Art Direction (Style Fixed){
+- Style:
+* Emoji icon object style
+* Cute proportions (2-head ratio)
+* Soft and rounded shapes
+* Bright and highly saturated colors
+* Minimal use of shadows
+- Visual Tone:
+* Cute, high-quality web-based tycoon game style
+* Toy-like texture, plastic texture
+- Important Rules:
+* Maintain overall consistency in lighting and color
+* Avoid realistic rendering
+}
+
+#Assets (Lightweight Rendering Based){
+* Use lightweight rendering style (no heavy assets)
+- Terrain: * grass, dirt, water
+- Paths:
+* dirt path
+* stone path
+* pavement block
+- Enclosures:
+* savannah
+* jungle
+* arctic
+* aquarium
+
+- Animals:
+    * lion, giraffe, elephant, monkey, penguin, polar bear, fish, dolphin
+    * use emoji + bounce idle animation
+- Visitors:
+    * use emoji
+    * small cute characters
+    * 2-head proportion
+    * various colored outfits
+- Facilities:
+    * food stall
+    * restroom
+    * bench
+    * trash bin
+    * shop
+- Decorations:
+    * trees
+    * fountain
+    * signboard
+    * streetlight
+}
+
+#Gameplay System{
+- Economy System
+* Starting funds: 3000 coins
+* Construction costs exist
+* Visitor-generated revenue
+- Visitors:
+* Spawn at the entrance
+* Must move along paths
+- Actions:
+* move
+* view animals
+* wait
+* eat
+* rest
+- Status Indicators: Displayed as speech bubble emojis for each visitor
+* satisfaction
+* hunger
+* cleanliness sensitivity
+- Overall Zoo Metrics:
+* overall satisfaction
+* cleanliness
+* queue status
+}
+
+#Animal System:
+* Animals increase attractiveness
+* Affect visitor satisfaction
+
+#Interaction{
+- Player Actions:
+* place paths
+* build enclosures
+* place facilities
+* remove objects
+- Rules:
+* Cannot move without paths
+* Enclosures must be connected to paths
+- Placement UX:
+* Show preview before placement
+* Invalid positions displayed in red
+- UI Structure:
+- Bottom Toolbar (Build Tab){
+- Tab Structure:
+* paths
+* animals
+* facilities
+* decorations
+}
+}
+
+#Movement and Animation{
+- Visitor Movement:
+* medium-speed movement
+* smooth movement between tiles
+* slight bounce animation
+* simple pathfinding
+- Queue:
+* visible line formation
+- Animation Style:
+* loop-based
+* smooth easing applied
+}
+
+#Performance Priority{
+- Priority:
+1. Fully playable functionality first
+2. Interaction responsiveness
+3. Visual style consistency and uniformity
+- Avoid:
+* heavy assets
+* complex physics calculations
+* excessive rendering
+}
+
+#Immediate Refinements & Bug Fixes (Priority Update){
+1) Localization: Change all UI and system text language to Korean.
+2) Input Precision: Fix the offset issue where the mouse cursor and the building site selection area are disconnected. The object preview must be accurately positioned exactly where the user intends to build.
+3) Functional Fix: The construction system is currently non-functional. Analyze the logic and ensure that building placement and instantiation are fully operational.
+4) UI Enhancement: Diversify the color palette of the UI interface to improve visual depth and appeal.
+}
+
+#Pre-output Self Test (Inspection, Improvement){
+* Is it actually playable without errors?
+* Is user interaction clearly functioning?
+* Does it comply with art direction, assets, gameplay system, interaction, movement, and animation?
+After self-inspection, any errors must be improved internally
+}
+
+#Output Requirements{
+- Deliverables:
+* A game that runs in a browser
+* Clean and well-structured code
+* Scalable architecture
+The final result must be as follows:
+→ A polished mini tycoon game
+→ Smooth and interactive gameplay experience
+}

@@ -1,0 +1,61 @@
+# Zootopia Tycoon — Refinement Prompts (Step 1–10)
+
+---
+
+## Step 1 — Tile Surface Rendering Fix
+
+Fix the building tile rendering so that all constructed objects (paths, animals, facilities, decorations) appear to be physically placed on the isometric ground surface rather than floating above it. Paths should be drawn as filled ground-level textures with visible patterns (dirt spots, stone cracks, pavement grid lines) directly on the tile face — no emoji. All objects and visitor characters must be anchored precisely to the top face of the isometric tile block. Add a visible side depth to each tile (left face and right face with distinct shading) to create a 3D block appearance.
+
+---
+
+## Step 2 — Transparency Removal
+
+Remove all transparency from rendered game objects and visitors. Specifically: eliminate all globalAlpha values below 1, remove drop shadow ellipses drawn with rgba(), convert all rgba() stroke and fill colors used on tile borders and path texture patterns to fully opaque solid hex colors. Increase emoji sizes for both placed objects and visitors so they are clearly visible. Ensure ctx.globalAlpha is explicitly set to 1 before every emoji draw call.
+
+---
+
+## Step 3 — Path-Only Visitor Movement
+
+Restrict visitor movement so they can only walk on placed path tiles (type: 'path'). Implement BFS (Breadth-First Search) pathfinding that finds the shortest route between two path tiles using only 4-directional (up, down, left, right) adjacency — no diagonal movement. Visitors must spawn on a random path tile, choose a random reachable path tile as their destination, follow the BFS route step by step, wait briefly upon arrival, then choose a new destination. If no path exists or no path tiles are placed, visitors should not spawn.
+
+---
+
+## Step 4 — Mobile Responsive Support
+
+Make the game fully playable on mobile devices. Add touch event handlers (touchstart, touchmove, touchend) to the canvas for single-finger drag (pan) and two-finger pinch-to-zoom. Implement pinch zoom that keeps the pinch center point fixed on screen during scaling. Add a responsive CSS media query for screens 600px wide or below: compress the HUD chips to show icon and value only (hide label text), shrink mode buttons to icon-only square touch targets (minimum 44×44px), optimize toolbar tab and item card sizes for touch. Set the initial camera zoom to 0.55 on mobile so the full grid is visible. Update the hint box text to show touch controls instead of mouse controls. Add safe-area-inset-bottom padding for iPhone home bar support.
+
+---
+
+## Step 5 — Custom Cursor Per Mode
+
+Replace the default browser cursor on the game canvas with custom SVG hand cursors that change based on the active mode. Use inline base64-encoded SVG for each cursor — no external image files. Build mode: cute cartoon hand with a pencil icon in the top-right corner. Inspect mode: cute cartoon hand with a magnifying glass icon, blue fingernails. Demolish mode: cute cartoon hand with a red circle-X icon. Switch the cursor by toggling CSS classes (mode-build, mode-inspect, mode-demolish) on the canvas element whenever setMode() is called. Provide a standard CSS fallback cursor for each mode.
+
+---
+
+## Step 6 — Hint Box Repositioning
+
+Move the controls hint panel so it no longer overlaps the bottom build toolbar. On desktop, place it inline inside the mode-bar column, directly below the demolish button — remove its fixed positioning and use static document flow. Set its z-index to 200 so it always appears above other UI elements. On mobile, hide the inline panel and replace it with a ❓ icon button at the bottom of the mode-bar. When tapped, show a floating popup panel with touch control instructions that auto-closes after 5 seconds.
+
+---
+
+## Step 7 — Hint Popup Fix
+
+Fix the ❓ hint popup so it works correctly on both desktop and mobile. The popup content must always be populated at click time inside the toggle function — not conditionally during init. Replace the display:none toggle method with opacity + pointer-events toggling so CSS transitions work and getBoundingClientRect() returns accurate values. Remove all hardcoded right/top/bottom position values from CSS. In the toggle function, render the popup invisibly first, read its actual offsetWidth and offsetHeight, then calculate its position dynamically: horizontally centered below the button with an 8px gap, clamped to stay within the viewport. If the popup would overflow the bottom of the screen, flip it above the button instead. Add a smooth scale + fade-in transition using transform-origin: top center.
+
+---
+
+## Step 8 — Remove Persistent Hint Panel
+
+Remove the always-visible inline hint text panel that was shown below the demolish button on desktop. Delete its HTML element, its CSS block, and the mobile media query override for it. The controls hint should only appear when the user explicitly clicks the ❓ button — never shown by default.
+
+---
+
+## Step 9 — Popup Positioned Below Button
+
+Fix the ❓ hint popup position so it appears directly below the ❓ button. Remove all hardcoded CSS position values (right, top, bottom). In the toggleHintPopup() function, use getBoundingClientRect() on the button to get its real screen position, then set popup left to center it horizontally under the button, and popup top to button bottom + 8px gap. Clamp the left value to keep the popup within the viewport. If the popup bottom edge would exceed the viewport height, flip it above the button instead.
+
+---
+
+## Step 10 — Game Title in Top-Left
+
+Add a game title badge to the top-left corner of the screen. Display a 🦁 lion emoji icon alongside two lines of text: "주토피아 타이쿤" as the main title in bold white, and "ZOOTOPIA TYCOON" as a smaller subtitle in gold color. Style the badge as a pill-shaped semi-transparent panel matching the existing HUD chip aesthetic (dark background, subtle border, backdrop-filter blur). Apply a looping bounce animation to the lion icon — subtle vertical movement with slight rotation, 2.2 second cycle. On mobile, reduce font sizes automatically to preserve screen space.
